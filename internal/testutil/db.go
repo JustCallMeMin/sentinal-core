@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sentinal/core/internal/database"
+	"github.com/sentinal/core/pkg/config"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -48,7 +49,13 @@ func SetupTestDB(t *testing.T) (*pgxpool.Pool, func()) {
 	}
 
 	// Initialize pool
-	pool, err := database.NewPool(connStr)
+	cfg := &config.Config{
+		DatabaseURL: connStr,
+		DBMaxConns:  10,
+		DBMinConns:  2,
+		DBMaxIdle:   "5m",
+	}
+	pool, err := database.NewPool(cfg)
 	if err != nil {
 		t.Fatalf("failed to initialize database pool: %s", err)
 	}

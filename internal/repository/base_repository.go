@@ -44,7 +44,10 @@ func (r *BaseRepository[T]) GetByID(ctx context.Context, id interface{}, idColum
 	query += " LIMIT 1"
 
 	if err := pgxscan.Get(ctx, r.DB, &entity, query, id); err != nil {
-		return nil, fmt.Errorf("failed to get %s by id: %w", r.TableName, err)
+		if pgxscan.NotFound(err) {
+			return nil, ErrNotFound
+		}
+		return nil, MapError(err)
 	}
 
 	return &entity, nil
@@ -63,7 +66,7 @@ func (r *BaseRepository[T]) ListAll(ctx context.Context, limit, offset int) ([]*
 	query += " LIMIT $1 OFFSET $2"
 
 	if err := pgxscan.Select(ctx, r.DB, &entities, query, limit, offset); err != nil {
-		return nil, fmt.Errorf("failed to list %s: %w", r.TableName, err)
+		return nil, MapError(err)
 	}
 
 	return entities, nil
@@ -79,7 +82,7 @@ func (r *BaseRepository[T]) Count(ctx context.Context) (int, error) {
 	}
 
 	if err := r.DB.QueryRow(ctx, query).Scan(&count); err != nil {
-		return 0, fmt.Errorf("failed to count records in %s: %w", r.TableName, err)
+		return 0, MapError(err)
 	}
 
 	return count, nil
@@ -95,7 +98,7 @@ func (r *BaseRepository[T]) Delete(ctx context.Context, id interface{}, idColumn
 	}
 
 	if _, err := r.DB.Exec(ctx, query, id); err != nil {
-		return fmt.Errorf("failed to delete from %s: %w", r.TableName, err)
+		return MapError(err)
 	}
 	return nil
 }

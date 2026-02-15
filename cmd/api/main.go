@@ -35,7 +35,7 @@ func main() {
 	}
 
 	// 4. Initialize Database
-	dbPool, err := database.Init(cfg.DatabaseURL)
+	dbPool, err := database.Init(cfg)
 	if err != nil {
 		logger.Fatal("Failed to initialize database", zap.Error(err))
 	}

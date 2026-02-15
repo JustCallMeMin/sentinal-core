@@ -14,6 +14,9 @@ type Config struct {
 	LogLevel    string `mapstructure:"LOG_LEVEL"`
 	JWTSecret   string `mapstructure:"JWT_SECRET"`
 	JWTExpiry   int    `mapstructure:"JWT_EXPIRY_HOURS"` // Expiry in hours
+	DBMaxConns  int32  `mapstructure:"DB_MAX_CONNS"`
+	DBMinConns  int32  `mapstructure:"DB_MIN_CONNS"`
+	DBMaxIdle   string `mapstructure:"DB_MAX_IDLE_TIME"`
 }
 
 // Validate ensures all required configuration is present and valid
@@ -34,6 +37,9 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("LOG_LEVEL", "info")
 	viper.SetDefault("JWT_SECRET", "sentinal-dev-secret-key-change-me")
 	viper.SetDefault("JWT_EXPIRY_HOURS", 24)
+	viper.SetDefault("DB_MAX_CONNS", 20)
+	viper.SetDefault("DB_MIN_CONNS", 5)
+	viper.SetDefault("DB_MAX_IDLE_TIME", "15m")
 
 	// Read from .env file if it exists
 	viper.SetConfigFile(".env")

@@ -31,13 +31,13 @@ func (r *tenantRepository) Create(ctx context.Context, t *models.Tenant) error {
 	`
 	_, err := r.DB.Exec(ctx, query, t.TenantID, t.Name, t.IndustrySegment, t.Settings)
 	if err != nil {
-		return fmt.Errorf("failed to insert tenant: %w", err)
+		return MapError(err)
 	}
 
 	// 2. SC-HARDENING: Call automation function to create partitions
 	partitionQuery := `SELECT create_tenant_partition($1)`
 	if _, err := r.DB.Exec(ctx, partitionQuery, t.TenantID); err != nil {
-		return fmt.Errorf("failed to create tenant partitions: %w", err)
+		return MapError(err)
 	}
 
 	return nil

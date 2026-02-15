@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/sentinal/core/pkg/config"
 	"github.com/sentinal/core/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -17,27 +18,32 @@ var (
 )
 
 // Init initializes the database connection pool (Singleton)
-func Init(connString string) (*pgxpool.Pool, error) {
+func Init(cfg *config.Config) (*pgxpool.Pool, error) {
 	var err error
 	once.Do(func() {
-		pool, err = NewPool(connString)
+		pool, err = NewPool(cfg)
 	})
 	return pool, err
 }
 
 // NewPool creates a new connection pool with standard settings
-func NewPool(connString string) (*pgxpool.Pool, error) {
+func NewPool(cfg *config.Config) (*pgxpool.Pool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	config, parseErr := pgxpool.ParseConfig(connString)
+	config, parseErr := pgxpool.ParseConfig(cfg.DatabaseURL)
 	if parseErr != nil {
 		return nil, fmt.Errorf("unable to parse connection string: %w", parseErr)
 	}
 
-	// Optimization: Set pool settings
-	config.MaxConns = 20
-	config.MinConns = 5
+	// Optimization: Set pool settings from config
+	config.MaxConns = cfg.DBMaxConns
+	config.MinConns = cfg.DBMinConns
+
+	if idleTime, err := time.ParseDuration(cfg.DBMaxIdle); err == nil {
+		config.MaxConnIdleTime = idleTime
+	}
+
 	config.MaxConnLifetime = 30 * time.Minute
 
 	// Connect
