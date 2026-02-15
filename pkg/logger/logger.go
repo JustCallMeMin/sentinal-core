@@ -43,6 +43,11 @@ func Error(msg string, fields ...zap.Field) {
 	Log.Error(msg, fields...)
 }
 
+// Warn logs a message at warn level
+func Warn(msg string, fields ...zap.Field) {
+	Log.Warn(msg, fields...)
+}
+
 // Fatal logs a message at fatal level and then panics
 func Fatal(msg string, fields ...zap.Field) {
 	Log.Fatal(msg, fields...)

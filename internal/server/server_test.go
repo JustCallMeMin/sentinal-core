@@ -25,7 +25,7 @@ func TestHealthCheck(t *testing.T) {
 		AppEnv: "test",
 		Port:   "8080",
 	}
-	srv := New(cfg, nil, nil) // passing nil db/uow for basic health check
+	srv := New(cfg, nil, nil, nil) // passing nil db/uow for basic health check
 
 	// Create request
 	req := httptest.NewRequest("GET", "/healthz", nil)
@@ -48,7 +48,7 @@ func TestHealthCheck(t *testing.T) {
 
 func TestRootRoute(t *testing.T) {
 	cfg := &config.Config{AppEnv: "test"}
-	srv := New(cfg, nil, nil)
+	srv := New(cfg, nil, nil, nil)
 
 	req := httptest.NewRequest("GET", "/", nil)
 	resp, err := srv.App.Test(req)

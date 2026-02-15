@@ -39,13 +39,26 @@ func TraceMiddleware() fiber.Handler {
 			zap.String("ip", c.IP()),
 		}
 
-		if err != nil {
-			logFields = append(logFields, zap.Error(err))
-			logger.Error("Request failed", logFields...)
-			return err
+		// Determine log level based on status code, not just error presence
+		statusCode := c.Response().StatusCode()
+
+		if statusCode >= 500 {
+			// Server errors (5xx)
+			if err != nil {
+				logFields = append(logFields, zap.Error(err))
+			}
+			logger.Error("Request failed - Server error", logFields...)
+		} else if statusCode >= 400 {
+			// Client errors (4xx)
+			if err != nil {
+				logFields = append(logFields, zap.Error(err))
+			}
+			logger.Warn("Request failed - Client error", logFields...)
+		} else {
+			// Success (2xx, 3xx)
+			logger.Info("Request processed", logFields...)
 		}
 
-		logger.Info("Request processed", logFields...)
-		return nil
+		return err
 	}
 }

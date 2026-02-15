@@ -1,0 +1,15 @@
+{
+  "workspace": {
+    "id": "93f84c19-b629-49be-a0f0-ce728817abcc"
+  },
+  "entities": {
+    "environments": [],
+    "flows": [],
+    "globals": [],
+    "mocks": [],
+    "specs": [
+      "../documents/api-contract.yaml"
+    ],
+    "collections": []
+  }
+}

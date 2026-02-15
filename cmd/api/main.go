@@ -6,6 +6,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sentinal/core/internal/api/transaction"
 	"github.com/sentinal/core/internal/database"
 	"github.com/sentinal/core/internal/repository"
 	"github.com/sentinal/core/internal/server"
@@ -42,8 +43,12 @@ func main() {
 	// 5. Initialize Unit of Work
 	uow := repository.NewUnitOfWork(dbPool)
 
-	// 6. Create server
-	srv := server.New(cfg, dbPool, uow)
+	// 6. Initialize Services & Handlers
+	txService := transaction.NewService(uow)
+	txHandler := transaction.NewHandler(txService)
+
+	// 7. Create server
+	srv := server.New(cfg, dbPool, uow, txHandler)
 
 	// 6. Graceful shutdown coordination
 	shutdownComplete := make(chan struct{})
