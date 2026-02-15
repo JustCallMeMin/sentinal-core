@@ -1,6 +1,8 @@
 package server
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/sentinal/core/pkg/config"
@@ -36,7 +38,12 @@ func New(cfg *config.Config) *Server {
 
 	// Health Check
 	app.Get("/healthz", func(c *fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusOK)
+		return c.JSON(fiber.Map{
+			"status":    "ok",
+			"service":   "sentinal-core",
+			"version":   version.Version,
+			"timestamp": time.Now().Unix(),
+		})
 	})
 
 	return &Server{

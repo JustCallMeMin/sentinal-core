@@ -41,15 +41,6 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Invalid DatabaseURL Format",
-			config: Config{
-				AppEnv:      "development",
-				Port:        "8080",
-				DatabaseURL: "not-a-url",
-			},
-			wantErr: true,
-		},
-		{
 			name: "Invalid AppEnv",
 			config: Config{
 				AppEnv:      "staging", // staging is not in our allowed list

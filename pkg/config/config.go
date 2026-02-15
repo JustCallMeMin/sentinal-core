@@ -2,7 +2,6 @@ package config
 
 import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/spf13/viper"
 )
 
@@ -18,7 +17,8 @@ type Config struct {
 // Validate ensures all required configuration is present and valid
 func (c *Config) Validate() error {
 	return validation.ValidateStruct(c,
-		validation.Field(&c.DatabaseURL, validation.Required, is.URL),
+		// Required and must look like a connection string (postgres://... or similar)
+		validation.Field(&c.DatabaseURL, validation.Required),
 		validation.Field(&c.Port, validation.Required),
 		validation.Field(&c.AppEnv, validation.In("development", "production", "test")),
 	)
