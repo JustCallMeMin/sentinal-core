@@ -6,6 +6,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sentinal/core/internal/database"
 	"github.com/sentinal/core/internal/server"
 	"github.com/sentinal/core/pkg/config"
 	"github.com/sentinal/core/pkg/logger"
@@ -30,10 +31,17 @@ func main() {
 		logger.Fatal("Invalid configuration", zap.Error(err))
 	}
 
-	// 4. Create server
-	srv := server.New(cfg)
+	// 4. Initialize Database
+	dbPool, err := database.Init(cfg.DatabaseURL)
+	if err != nil {
+		logger.Fatal("Failed to initialize database", zap.Error(err))
+	}
+	defer database.Close()
 
-	// 5. Graceful shutdown coordination
+	// 5. Create server
+	srv := server.New(cfg, dbPool)
+
+	// 6. Graceful shutdown coordination
 	shutdownComplete := make(chan struct{})
 	go func() {
 		sigint := make(chan os.Signal, 1)
@@ -42,8 +50,7 @@ func main() {
 
 		logger.Info("Shutting down server gracefully...")
 
-		// TODO(SC-011, SC-020): Close DB connections here
-		// TODO(SC-077): Close Redis connections here
+		// TODO(SC-020): Cleanup other resources here
 
 		// Set a timeout for shutdown process to prevent hanging
 		if err := srv.App.ShutdownWithTimeout(10 * time.Second); err != nil {
@@ -53,7 +60,7 @@ func main() {
 		close(shutdownComplete)
 	}()
 
-	// 6. Start server
+	// 7. Start server
 	logger.Info("Starting Sentinal Core API",
 		zap.String("port", cfg.Port),
 		zap.String("env", cfg.AppEnv),

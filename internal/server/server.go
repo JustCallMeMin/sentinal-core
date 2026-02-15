@@ -1,10 +1,12 @@
 package server
 
 import (
+	"context"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sentinal/core/pkg/config"
 	"github.com/sentinal/core/pkg/version"
 )
@@ -13,11 +15,11 @@ import (
 type Server struct {
 	App    *fiber.App
 	Config *config.Config
-	// TODO(SC-011): Add DB *pgxpool.Pool here
+	DB     *pgxpool.Pool
 }
 
 // New creates a new Server instance
-func New(cfg *config.Config) *Server {
+func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 	app := fiber.New(fiber.Config{
 		AppName:       "Sentinal Core " + version.Version,
 		StrictRouting: true,
@@ -51,8 +53,16 @@ func New(cfg *config.Config) *Server {
 
 	// Readiness Check
 	app.Get("/readyz", func(c *fiber.Ctx) error {
-		// TODO(SC-011): Perform actual DB ping here
-		// if err := s.DB.Ping(); err != nil { return c.Status(503).JSON(...) }
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		if err := db.Ping(ctx); err != nil {
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+				"status":  "down",
+				"service": "sentinal-core",
+				"error":   "database connection lost",
+			})
+		}
 
 		return c.JSON(fiber.Map{
 			"status":    "ready",
@@ -65,6 +75,7 @@ func New(cfg *config.Config) *Server {
 	return &Server{
 		App:    app,
 		Config: cfg,
+		DB:     db,
 	}
 }
 
