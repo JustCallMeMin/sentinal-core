@@ -55,8 +55,8 @@ Every task is considered DONE only when:
 ---
 
 ## 🔐 EPIC 3: Auth & RBAC (SC-021 → SC-030)
-- [ ] **SC-021**: Implement password hashing (`bcrypt`) – `0.5d` [Dep: None]
-- [ ] **SC-022**: Implement login endpoint – `0.5d` [Dep: SC-021, SC-011]
+- [x] **SC-021**: Implement password hashing (`bcrypt`) – `0.5d` [Dep: None] ✅ 2026-02-15
+- [x] **SC-022**: Implement login endpoint – `0.5d` [Dep: SC-021, SC-011] ✅ 2026-02-15
 - [ ] **SC-023**: Implement JWT issuance – `0.5d` [Dep: SC-022]
 - [ ] **SC-024**: Implement JWT middleware – `0.5d` [Dep: SC-023]
 - [ ] **SC-025**: Implement role permission matrix – `1d` [Dep: None]
@@ -75,7 +75,7 @@ Every task is considered DONE only when:
 
 ## 📜 EPIC 4: Transaction Read API (SC-031 → SC-038)
 - [x] **SC-031**: Implement `POST /transactions` (ingest) – `0.5d` [Dep: SC-011, SC-029] ✅ 2026-02-15
-- [ ] **SC-032**: Implement idempotency via `correlation_id` – `0.5d` [Dep: SC-031]
+- [x] **SC-032**: Implement idempotency via `correlation_id` – `0.5d` [Dep: SC-031] ✅ 2026-02-15
 - [ ] **SC-033**: Implement `GET /transactions` (cursor pagination) – `1d` [Dep: SC-031]
 - [ ] **SC-034**: Add index on (`tenant_id`, `occurred_at` DESC) – `0.5d` [Dep: SC-033]
 - [ ] **SC-035**: Implement `GET /transactions/:id` – `0.5d` [Dep: SC-033]

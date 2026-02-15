@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/sentinal/core/internal/domain/models"
 )
@@ -66,6 +67,30 @@ func (r *transactionRepository) SaveBulk(ctx context.Context, transactions []*mo
 	}
 
 	return copyCount, nil
+}
+
+// FindByCorrelation finds a transaction by tenant_id and correlation_id
+func (r *transactionRepository) FindByCorrelation(
+	ctx context.Context,
+	tenantID, correlationID uuid.UUID,
+) (*models.Transaction, error) {
+	query := `
+		SELECT transaction_id, tenant_id, correlation_id, amount, currency, occurred_at, payload, created_at
+		FROM transactions
+		WHERE tenant_id = $1 AND correlation_id = $2
+		LIMIT 1
+	`
+
+	var tx models.Transaction
+	err := pgxscan.Get(ctx, r.DB, &tx, query, tenantID, correlationID)
+	if err != nil {
+		if pgxscan.NotFound(err) {
+			return nil, fmt.Errorf("transaction not found")
+		}
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+
+	return &tx, nil
 }
 
 func (r *transactionRepository) ListByTenant(ctx context.Context, tenantID string, limit, offset int) ([]*models.Transaction, error) {

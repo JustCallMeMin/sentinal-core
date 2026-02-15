@@ -10,12 +10,13 @@ import (
 
 // CreateTransactionRequest defines the JSON input for transaction ingestion
 type CreateTransactionRequest struct {
-	UserID    string          `json:"user_id"`
-	Amount    float64         `json:"amount"`
-	Currency  string          `json:"currency"`
-	DeviceID  string          `json:"device_id"`
-	IPAddress string          `json:"ip_address"`
-	Payload   json.RawMessage `json:"payload"` // Arbitrary JSON for merchant-specific data
+	CorrelationID *uuid.UUID      `json:"correlation_id,omitempty"` // Optional idempotency key
+	UserID        string          `json:"user_id"`
+	Amount        float64         `json:"amount"`
+	Currency      string          `json:"currency"`
+	DeviceID      string          `json:"device_id"`
+	IPAddress     string          `json:"ip_address"`
+	Payload       json.RawMessage `json:"payload"` // Arbitrary JSON for merchant-specific data
 }
 
 func (r CreateTransactionRequest) Validate() error {

@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/sentinal/core/internal/api/auth"
 	"github.com/sentinal/core/internal/api/transaction"
 	"github.com/sentinal/core/internal/domain/repositories"
 	"github.com/sentinal/core/pkg/config"
@@ -17,10 +18,11 @@ type Server struct {
 	DB                 *pgxpool.Pool
 	UoW                repositories.UnitOfWork
 	TransactionHandler *transaction.Handler
+	AuthHandler        *auth.Handler
 }
 
 // New creates a new Server instance
-func New(cfg *config.Config, db *pgxpool.Pool, uow repositories.UnitOfWork, txHandler *transaction.Handler) *Server {
+func New(cfg *config.Config, db *pgxpool.Pool, uow repositories.UnitOfWork, txHandler *transaction.Handler, authHandler *auth.Handler) *Server {
 	app := fiber.New(fiber.Config{
 		AppName:       "Sentinal Core " + version.Version,
 		StrictRouting: true,
@@ -38,6 +40,7 @@ func New(cfg *config.Config, db *pgxpool.Pool, uow repositories.UnitOfWork, txHa
 		DB:                 db,
 		UoW:                uow,
 		TransactionHandler: txHandler,
+		AuthHandler:        authHandler,
 	}
 
 	// Register Routes

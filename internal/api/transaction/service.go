@@ -27,6 +27,20 @@ func NewService(uow repositories.UnitOfWork) Service {
 
 // Create ingests a transaction
 func (s *service) Create(ctx context.Context, tenantID uuid.UUID, req *CreateTransactionRequest) (*CreateTransactionResponse, error) {
+	// Idempotency check: If correlation_id provided, check for existing transaction
+	if req.CorrelationID != nil {
+		existing, err := s.uow.Transactions().FindByCorrelation(ctx, tenantID, *req.CorrelationID)
+		if err == nil {
+			// Found existing transaction - return it (idempotent response)
+			return &CreateTransactionResponse{
+				TransactionID: existing.TransactionID,
+				Status:        "received",
+				ReceivedAt:    existing.OccurredAt,
+			}, nil
+		}
+		// If not found (err != nil), continue to create new transaction
+	}
+
 	// Prepare Payload
 	payloadMap := make(map[string]interface{})
 	if req.Payload != nil {
@@ -45,6 +59,7 @@ func (s *service) Create(ctx context.Context, tenantID uuid.UUID, req *CreateTra
 	tx := &models.Transaction{
 		TransactionID: uuid.New(),
 		TenantID:      tenantID,
+		CorrelationID: req.CorrelationID, // NEW - may be nil
 		Amount:        req.Amount,
 		Currency:      req.Currency,
 		Payload:       payloadMap,

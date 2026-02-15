@@ -53,6 +53,12 @@ func (s *Server) RegisterRoutes() {
 	// API v1 Group
 	v1 := s.App.Group("/api/v1")
 
+	// Auth Routes
+	if s.AuthHandler != nil {
+		auth := v1.Group("/auth")
+		auth.Post("/login", s.AuthHandler.Login)
+	}
+
 	// Transaction Routes
 	if s.TransactionHandler != nil {
 		v1.Post("/transactions", s.TransactionHandler.Create)

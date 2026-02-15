@@ -73,3 +73,9 @@ func (u *unitOfWork) Transactions() repositories.TransactionRepository {
 		BaseRepository: NewBaseRepository[models.Transaction](u.db, "transactions", ""),
 	}
 }
+
+func (u *unitOfWork) Users() repositories.UserRepository {
+	return &userRepository{
+		BaseRepository: NewBaseRepository[models.User](u.db, "users", ""),
+	}
+}

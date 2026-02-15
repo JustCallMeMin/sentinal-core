@@ -434,6 +434,61 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Create Transaction - Idempotency (correlation_id)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Verify Idempotency\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (pm.collectionVariables.get(\"last_corr_tx_id\")) {",
+                  "        pm.expect(jsonData.transaction_id).to.eql(pm.collectionVariables.get(\"last_corr_tx_id\"));",
+                  "    } else {",
+                  "        pm.collectionVariables.set(\"last_corr_tx_id\", jsonData.transaction_id);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "id": "a1b2c3d4-e5f6-4a5b-bc6d-7e8f9a0b1c2d",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-ID",
+                "value": "{{tenant_id}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correlation_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"user_id\": \"user_idempotent_test\",\n  \"amount\": 88.88,\n  \"currency\": \"USD\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/transactions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transactions"
+              ]
+            }
+          },
+          "response": []
         }
       ],
       "id": "767c0b51-f87a-430f-b367-1aaae8daa3d9"
