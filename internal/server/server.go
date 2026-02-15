@@ -4,16 +4,18 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/sentinal/core/pkg/config"
 	"github.com/sentinal/core/pkg/version"
 )
 
 // Server holds the Fiber app and configurations
 type Server struct {
-	App *fiber.App
+	App    *fiber.App
+	Config *config.Config
 }
 
 // New creates a new Server instance
-func New() *Server {
+func New(cfg *config.Config) *Server {
 	app := fiber.New(fiber.Config{
 		AppName:       "Sentinal Core " + version.Version,
 		StrictRouting: true,
@@ -39,7 +41,8 @@ func New() *Server {
 	})
 
 	return &Server{
-		App: app,
+		App:    app,
+		Config: cfg,
 	}
 }
 

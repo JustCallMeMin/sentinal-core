@@ -7,11 +7,23 @@ import (
 	"syscall"
 
 	"github.com/sentinal/core/internal/server"
+	"github.com/sentinal/core/pkg/config"
 )
 
 func main() {
+	// Load configuration
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	// Validate configuration
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("Invalid configuration: %v", err)
+	}
+
 	// Create server
-	srv := server.New()
+	srv := server.New(cfg)
 
 	// Graceful shutdown
 	go func() {
@@ -26,13 +38,8 @@ func main() {
 	}()
 
 	// Start server
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	log.Printf("Starting Sentinal Core API on :%s", port)
-	if err := srv.Listen(":" + port); err != nil {
+	log.Printf("Starting Sentinal Core API on :%s (Env: %s)", cfg.Port, cfg.AppEnv)
+	if err := srv.Listen(":" + cfg.Port); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
