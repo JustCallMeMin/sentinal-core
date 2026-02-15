@@ -33,6 +33,11 @@ func New() *Server {
 		})
 	})
 
+	// Health Check
+	app.Get("/healthz", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusOK)
+	})
+
 	return &Server{
 		App: app,
 	}
