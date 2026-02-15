@@ -12,7 +12,15 @@ TENANT_ID = "00000000-0000-0000-0000-000000000001"
 START_DATE = datetime.datetime(2023, 1, 1)
 
 def ingest_data():
-    conn = psycopg2.connect("postgres://postgres:postgres@localhost:5432/sentinal_core?sslmode=disable")
+    # Priority: Env variable > Docker default
+    db_url = os.getenv("DATABASE_URL", "postgres://sentinal:password123@localhost:5432/sentinal_core?sslmode=disable")
+    
+    # If running inside Docker network, replace localhost with postgres
+    if os.getenv("DOCKER_CONTAINER") == "true":
+        db_url = db_url.replace("localhost", "postgres")
+
+    print(f"-- Connecting to DB: {db_url.split('@')[-1]}") # Log without credentials
+    conn = psycopg2.connect(db_url)
     cur = conn.cursor()
     
     # Pre-create Tenant

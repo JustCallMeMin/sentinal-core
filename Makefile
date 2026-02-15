@@ -11,7 +11,7 @@ LDFLAGS=-ldflags "-X $(PKG)/pkg/version.Version=$(VERSION) -X $(PKG)/pkg/version
 # Docker configuration
 DOCKER_IMAGE=sentinal-core
 
-.PHONY: all build run test clean lint migrate-up migrate-down docker-build docker-run help
+.PHONY: all build run test clean lint migrate-up migrate-down docker-build docker-run compose-up compose-down logs help
 
 all: help
 
@@ -57,6 +57,19 @@ docker-build:
 ## docker-run: Run Docker container
 docker-run:
 	@docker run -p 8080:8080 --env-file .env $(DOCKER_IMAGE):latest
+
+## compose-up: Spin up the entire stack (API, DB, Redis)
+compose-up:
+	@echo "Spinning up the stack..."
+	@docker compose up --build -d
+
+## compose-down: Stop and remove the stack
+compose-down:
+	@docker compose down
+
+## logs: View logs from all services
+logs:
+	@docker compose logs -f
 
 ## help: Show this help message
 help:
