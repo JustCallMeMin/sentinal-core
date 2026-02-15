@@ -13,6 +13,12 @@ type transactionRepository struct {
 	*BaseRepository[models.Transaction]
 }
 
+func NewTransactionRepository(db Querier) *transactionRepository {
+	return &transactionRepository{
+		BaseRepository: NewBaseRepository[models.Transaction](db, "transactions"),
+	}
+}
+
 func (r *transactionRepository) Save(ctx context.Context, tx *models.Transaction) error {
 	query := `
 		INSERT INTO transactions (transaction_id, tenant_id, correlation_id, amount, currency, occurred_at, payload, created_at)

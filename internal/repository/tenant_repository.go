@@ -13,6 +13,12 @@ type tenantRepository struct {
 	*BaseRepository[models.Tenant]
 }
 
+func NewTenantRepository(db Querier) *tenantRepository {
+	return &tenantRepository{
+		BaseRepository: NewBaseRepository[models.Tenant](db, "tenants"),
+	}
+}
+
 func (r *tenantRepository) Create(ctx context.Context, t *models.Tenant) error {
 	if t.TenantID == uuid.Nil {
 		t.TenantID = uuid.New()

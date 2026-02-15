@@ -12,6 +12,7 @@ type Tenant struct {
 	IndustrySegment string                 `json:"industry_segment" db:"industry_segment"`
 	APIKeyHash      *string                `json:"-" db:"api_key_hash"`
 	Settings        map[string]interface{} `json:"settings" db:"settings"`
+	Status          string                 `json:"status" db:"status"`
 	CreatedAt       time.Time              `json:"created_at" db:"created_at"`
 	UpdatedAt       time.Time              `json:"updated_at" db:"updated_at"`
 }

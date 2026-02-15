@@ -1,25 +1,23 @@
-# 🔍 CODE REVIEW & QUALITY SCORE (SC-011 -> SC-018)
+# 🔍 CODE REVIEW & QUALITY SCORE (SC-011 -> SC-019)
 
-## 🏆 TOTAL SCORE: **10/10**
+## 🏆 TOTAL SCORE: **8.5/10**
 
 ### 🏗️ Architecture Review (tech-lead)
-- **Atomicity**: `UnitOfWork` và `TransactionMiddleware` triển khai chuẩn mực, đảm bảo tính nhất quán dữ liệu cho SaaS.
-- **Flexibility**: Sử dụng `Querier` interface giúp Repositories hoạt động linh hoạt (Pool vs Tx).
-- **Scalability**: Thiết kế Partitioning + BRIN Indexing đảm bảo hệ thống chịu tải Big Data tốt.
+- **Testcontainers Setup**: Implementation chuẩn mực, sử dụng container Postgres 16-alpine thật, đảm bảo độ tin cậy tuyệt đối so với mock driver.
+- **Isolation**: Mỗi test suite khởi tạo container riêng biệt, tránh state leak.
 
 ### 🔍 Code Quality (reviewer)
-- Tách biệt Interface và Implementation tuyệt đối (SOLID).
-- Xử lý lỗi (Error Propagation) và Panic Recovery trong UoW rất an toàn.
-- Mapping dữ liệu cực gọn với `scany`.
+- Code test gọn gàng, sử dụng `stretchr/testify` (require/assert) hợp lý.
+- `testutil` helper function giúp giảm boilerplate code trong các file test.
 
-### 🛡️ Security & Performance (security/performance-engineer)
-- **Isolation**: Mỗi request được cô lập trong transaction và partition riêng.
-- **Performance**: Bypass transaction cho các request GET để tối ưu connections.
-- **Bulk Write**: `pgx.CopyFrom` tích hợp sẵn trong Transaction layer.
+### 🛡️ Areas for Improvement (Constructive Feedback)
+- **Migration Verification**: Chưa có test case kiểm tra việc migration version sau khi chạy.
+- **Constraint Testing**: Thiếu test case cho các lỗi ràng buộc (Unique, Foreign Key).
+- **Performance Assertions**: Bulk Save chưa có assert về thời gian thực thi (latency threshold).
 
 ---
 
 ## 📈 PROGRESS SUMMARY
-- **Epic 2 Completion**: 66.7%
-- **Overall Completion**: 23.1%
-- **Status**: 🟢 EXCELLENT. Ready for Integration Tests (SC-019).
+- **Epic 2 Completion**: 75%
+- **Overall Completion**: 24.4%
+- **Status**: 🟢 VALIDATED. Ready for Soft Delete (SC-020).
