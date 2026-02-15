@@ -59,7 +59,14 @@ func (s *Server) RegisterRoutes() {
 		auth.Post("/login", s.AuthHandler.Login)
 	}
 
+	// Admin Routes
+	admin := v1.Group("/admin", AuthMiddleware(s.TokenService), RBACMiddleware("users:manage"))
+	admin.Get("/health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"status": "admin_access_verified"})
+	})
+
 	// Transaction Routes
+	// Note: In real setup, this might use API Key auth instead
 	if s.TransactionHandler != nil {
 		v1.Post("/transactions", s.TransactionHandler.Create)
 	}

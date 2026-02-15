@@ -79,3 +79,7 @@ func (u *unitOfWork) Users() repositories.UserRepository {
 		BaseRepository: NewBaseRepository[models.User](u.db, "users", ""),
 	}
 }
+
+func (u *unitOfWork) RBAC() repositories.RBACRepository {
+	return NewRBACRepository(u.db)
+}

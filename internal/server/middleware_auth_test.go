@@ -15,8 +15,8 @@ type MockTokenService struct {
 	mock.Mock
 }
 
-func (m *MockTokenService) GenerateToken(userID, tenantID uuid.UUID, email string) (string, error) {
-	args := m.Called(userID, tenantID, email)
+func (m *MockTokenService) GenerateToken(userID, tenantID uuid.UUID, email string, permissions []string) (string, error) {
+	args := m.Called(userID, tenantID, email, permissions)
 	return args.String(0), args.Error(1)
 }
 

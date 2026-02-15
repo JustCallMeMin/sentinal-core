@@ -18,9 +18,10 @@ func TestTokenService(t *testing.T) {
 	userID := uuid.New()
 	tenantID := uuid.New()
 	email := "test-jwt@example.com"
+	permissions := []string{"transactions:read"}
 
 	t.Run("Generate Valid Token", func(t *testing.T) {
-		token, err := service.GenerateToken(userID, tenantID, email)
+		token, err := service.GenerateToken(userID, tenantID, email, permissions)
 		require.NoError(t, err)
 		assert.NotEmpty(t, token)
 
@@ -37,6 +38,7 @@ func TestTokenService(t *testing.T) {
 		assert.Equal(t, userID.String(), claims.Subject)
 		assert.Equal(t, tenantID, claims.TenantID)
 		assert.Equal(t, email, claims.Email)
+		assert.Equal(t, permissions, claims.Permissions)
 
 		// Verify expiry (within reasonable range)
 		expiry := claims.ExpiresAt.Time
@@ -44,7 +46,7 @@ func TestTokenService(t *testing.T) {
 	})
 
 	t.Run("Invalid Secret Fails Verification", func(t *testing.T) {
-		token, err := service.GenerateToken(userID, tenantID, email)
+		token, err := service.GenerateToken(userID, tenantID, email, nil)
 		require.NoError(t, err)
 
 		_, err = jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {

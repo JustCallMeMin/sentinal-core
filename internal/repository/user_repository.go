@@ -20,6 +20,9 @@ func NewUserRepository(db Querier) *userRepository {
 }
 
 func (r *userRepository) Create(ctx context.Context, user *models.User) error {
+	if user.UserID == uuid.Nil {
+		user.UserID = uuid.New()
+	}
 	query := `
 		INSERT INTO users (user_id, tenant_id, email, password_hash, role_id, status, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())

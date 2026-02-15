@@ -9,7 +9,7 @@ import (
 )
 
 type TokenService interface {
-	GenerateToken(userID uuid.UUID, tenantID uuid.UUID, email string) (string, error)
+	GenerateToken(userID uuid.UUID, tenantID uuid.UUID, email string, permissions []string) (string, error)
 	ValidateToken(tokenString string) (*UserClaims, error)
 }
 
@@ -20,8 +20,9 @@ type jwtTokenService struct {
 
 type UserClaims struct {
 	jwt.RegisteredClaims
-	TenantID uuid.UUID `json:"tenant_id"`
-	Email    string    `json:"email"`
+	TenantID    uuid.UUID `json:"tenant_id"`
+	Email       string    `json:"email"`
+	Permissions []string  `json:"permissions"`
 }
 
 func NewTokenService(secret string, expiryHours int) TokenService {
@@ -50,15 +51,16 @@ func (s *jwtTokenService) ValidateToken(tokenString string) (*UserClaims, error)
 	return nil, fmt.Errorf("invalid token claims")
 }
 
-func (s *jwtTokenService) GenerateToken(userID uuid.UUID, tenantID uuid.UUID, email string) (string, error) {
+func (s *jwtTokenService) GenerateToken(userID uuid.UUID, tenantID uuid.UUID, email string, permissions []string) (string, error) {
 	claims := UserClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   userID.String(),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.expiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
-		TenantID: tenantID,
-		Email:    email,
+		TenantID:    tenantID,
+		Email:       email,
+		Permissions: permissions,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

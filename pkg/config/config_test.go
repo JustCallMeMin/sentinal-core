@@ -19,6 +19,7 @@ func TestConfig_Validate(t *testing.T) {
 				Port:        "8080",
 				DatabaseURL: "postgres://user:pass@localhost:5432/db",
 				LogLevel:    "info",
+				JWTSecret:   "production-secret-key-at-least-32-chars",
 			},
 			wantErr: false,
 		},

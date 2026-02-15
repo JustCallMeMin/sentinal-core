@@ -10,4 +10,5 @@ type UnitOfWork interface {
 	Tenants() TenantRepository
 	Transactions() TransactionRepository
 	Users() UserRepository
+	RBAC() RBACRepository
 }
