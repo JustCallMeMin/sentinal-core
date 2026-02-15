@@ -3,6 +3,7 @@ module github.com/sentinal/core
 go 1.24.0
 
 require (
+	github.com/georgysavva/scany/v2 v2.1.4
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/gofiber/fiber/v2 v2.52.11
 	github.com/golang-migrate/migrate/v4 v4.19.1
