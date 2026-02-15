@@ -1,0 +1,288 @@
+openapi: 3.0.3
+info:
+  title: Sentinal Core API
+  description: Real-time Multi-tenant Fraud Detection & Trust Scoring Platform API.
+  version: 1.0.0
+  contact:
+    name: Sentinal Engineering
+    email: engineering@sentinal.io
+servers:
+  - url: https://api.sentinal.io/v1
+    description: Production server
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    TenantIdAuth:
+      type: apiKey
+      in: header
+      name: X-Tenant-ID
+
+  schemas:
+    TransactionRequest:
+      type: object
+      required:
+        - correlation_id
+        - external_user_id
+        - amount
+        - currency
+      properties:
+        correlation_id:
+          type: string
+          description: Unique merchant transaction ID for idempotency.
+        external_user_id:
+          type: string
+          description: User ID in merchant's system.
+        amount:
+          type: number
+          format: float
+          example: 150.50
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          example: "USD"
+        ip_address:
+          type: string
+          format: ipv4
+        device_fingerprint:
+          type: string
+        location:
+          type: object
+          properties:
+            lat: { type: number }
+            lon: { type: number }
+        payload:
+          type: object
+          description: Arbitrary transaction metadata.
+
+    DecisionResponse:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+          format: uuid
+        correlation_id:
+          type: string
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        outcome:
+          type: string
+          enum: [approve, challenge, block]
+        reason:
+          type: string
+          description: Qualitative reason for the decision (e.g., 'velocity_cap_exceeded').
+        metadata:
+          type: object
+          properties:
+            model_version: { type: string }
+            policy_id: { type: string }
+        decided_at:
+          type: string
+          format: date-time
+
+    LabelRequest:
+      type: object
+      required:
+        - transaction_id
+        - source
+        - value
+      properties:
+        transaction_id:
+          type: string
+          format: uuid
+        source:
+          type: string
+          enum: [manual, chargeback, external]
+        value:
+          type: string
+          enum: [fraud, legit]
+        comment:
+          type: string
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+    PaginatedTransactions:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionRequest'
+        total: { type: integer }
+        limit: { type: integer }
+        offset: { type: integer }
+
+paths:
+  /healthz:
+    get:
+      summary: Liveness probe
+      responses:
+        '200':
+          description: Service is alive
+  
+  /readyz:
+    get:
+      summary: Readiness probe
+      responses:
+        '200':
+          description: Dependencies (DB, Kafka, Redis) are healthy
+        '503':
+          description: Dependencies not available
+
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      responses:
+        '200':
+          description: Success
+
+  /score:
+    post:
+      summary: Score a transaction
+      security:
+        - ApiKeyAuth: []
+          TenantIdAuth: []
+      parameters:
+         - in: header
+           name: X-Correlation-ID
+           schema:
+             type: string
+           required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+      responses:
+        '200':
+          description: Decision successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+
+  /transactions:
+    get:
+      summary: List all transactions (Paginated)
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTransactions'
+
+  /devices:
+    post:
+      summary: Register mobile device
+      security:
+        - BearerAuth: []
+      description: Captures FCM/APNS token for push notifications.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, platform]
+              properties:
+                token: { type: string }
+                platform: { type: string, enum: [ios, android] }
+      responses:
+        '201':
+          description: Device registered
+  
+  /notifications:
+    get:
+      summary: List notifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: unread_only
+          in: query
+          schema: { type: boolean, default: true }
+      responses:
+        '200':
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items: 
+                  $ref: '#/components/schemas/Notification'
+
+  /notifications/{id}/read:
+    put:
+      summary: Mark notification as read
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Updated
+
+  /decisions/{transaction_id}:
+    get:
+      summary: Retrieve a specific decision
+      parameters:
+        - name: transaction_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Decision found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionResponse'
+
+  /labels:
+    post:
+      summary: Update ground truth label
+      description: Submit manual review or chargeback data.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabelRequest'
+      responses:
+        '201':
+          description: Label recorded
