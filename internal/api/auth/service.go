@@ -14,11 +14,15 @@ type Service interface {
 }
 
 type service struct {
-	uow repositories.UnitOfWork
+	uow            repositories.UnitOfWork
+	tokenGenerator TokenGenerator
 }
 
-func NewService(uow repositories.UnitOfWork) Service {
-	return &service{uow: uow}
+func NewService(uow repositories.UnitOfWork, tokenGenerator TokenGenerator) Service {
+	return &service{
+		uow:            uow,
+		tokenGenerator: tokenGenerator,
+	}
 }
 
 func (s *service) Login(ctx context.Context, req *LoginRequest) (*LoginResponse, error) {
@@ -40,10 +44,13 @@ func (s *service) Login(ctx context.Context, req *LoginRequest) (*LoginResponse,
 		return nil, fmt.Errorf("account is %s", user.Status)
 	}
 
-	// For SC-022, we just return a success message or placeholder token
-	// JWT implementation is slated for SC-023
+	accessToken, err := s.tokenGenerator.GenerateToken(user.UserID, user.TenantID, user.Email)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate access token")
+	}
+
 	return &LoginResponse{
-		AccessToken: "placeholder_token_for_now",
+		AccessToken: accessToken,
 		Email:       user.Email,
 		Status:      "success",
 	}, nil

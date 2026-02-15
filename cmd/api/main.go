@@ -6,6 +6,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/sentinal/core/internal/api/auth"
 	"github.com/sentinal/core/internal/api/transaction"
 	"github.com/sentinal/core/internal/database"
 	"github.com/sentinal/core/internal/repository"
@@ -47,8 +48,12 @@ func main() {
 	txService := transaction.NewService(uow)
 	txHandler := transaction.NewHandler(txService)
 
+	tokenService := auth.NewTokenService(cfg.JWTSecret, cfg.JWTExpiry)
+	authService := auth.NewService(uow, tokenService)
+	authHandler := auth.NewHandler(authService)
+
 	// 7. Create server
-	srv := server.New(cfg, dbPool, uow, txHandler)
+	srv := server.New(cfg, dbPool, uow, txHandler, authHandler)
 
 	// 6. Graceful shutdown coordination
 	shutdownComplete := make(chan struct{})

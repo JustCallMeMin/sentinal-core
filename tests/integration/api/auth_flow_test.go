@@ -54,8 +54,13 @@ func TestAuthFlow_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Initialize Server
-	cfg := &config.Config{AppEnv: "test"}
-	authService := auth.NewService(uow)
+	cfg := &config.Config{
+		AppEnv:    "test",
+		JWTSecret: "test-secret",
+		JWTExpiry: 1,
+	}
+	tokenService := auth.NewTokenService(cfg.JWTSecret, cfg.JWTExpiry)
+	authService := auth.NewService(uow, tokenService)
 	authHandler := auth.NewHandler(authService)
 	txService := transaction.NewService(uow)
 	txHandler := transaction.NewHandler(txService)
