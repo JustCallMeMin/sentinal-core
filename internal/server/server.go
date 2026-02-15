@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/sentinal/core/internal/domain/repositories"
 	"github.com/sentinal/core/pkg/config"
 	"github.com/sentinal/core/pkg/version"
 )
@@ -16,10 +17,11 @@ type Server struct {
 	App    *fiber.App
 	Config *config.Config
 	DB     *pgxpool.Pool
+	UoW    repositories.UnitOfWork
 }
 
 // New creates a new Server instance
-func New(cfg *config.Config, db *pgxpool.Pool) *Server {
+func New(cfg *config.Config, db *pgxpool.Pool, uow repositories.UnitOfWork) *Server {
 	app := fiber.New(fiber.Config{
 		AppName:       "Sentinal Core " + version.Version,
 		StrictRouting: true,
@@ -28,7 +30,8 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 
 	// Middleware
 	app.Use(recover.New())
-	app.Use(TraceMiddleware()) // Our custom structured logger + trace ID
+	app.Use(TraceMiddleware())          // Our custom structured logger + trace ID
+	app.Use(TransactionMiddleware(uow)) // Atomic transaction per request
 
 	// TODO(SC-031): Move routes to internal/server/routes.go when scaling
 
@@ -76,6 +79,7 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 		App:    app,
 		Config: cfg,
 		DB:     db,
+		UoW:    uow,
 	}
 }
 

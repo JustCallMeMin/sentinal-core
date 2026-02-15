@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sentinal/core/internal/database"
+	"github.com/sentinal/core/internal/repository"
 	"github.com/sentinal/core/internal/server"
 	"github.com/sentinal/core/pkg/config"
 	"github.com/sentinal/core/pkg/logger"
@@ -38,8 +39,11 @@ func main() {
 	}
 	defer database.Close()
 
-	// 5. Create server
-	srv := server.New(cfg, dbPool)
+	// 5. Initialize Unit of Work
+	uow := repository.NewUnitOfWork(dbPool)
+
+	// 6. Create server
+	srv := server.New(cfg, dbPool, uow)
 
 	// 6. Graceful shutdown coordination
 	shutdownComplete := make(chan struct{})

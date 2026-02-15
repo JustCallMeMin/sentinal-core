@@ -6,18 +6,11 @@ import (
 
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sentinal/core/internal/domain/models"
 )
 
 type tenantRepository struct {
 	*BaseRepository[models.Tenant]
-}
-
-func NewTenantRepository(pool *pgxpool.Pool) *tenantRepository {
-	return &tenantRepository{
-		BaseRepository: NewBaseRepository[models.Tenant](pool, "tenants"),
-	}
 }
 
 func (r *tenantRepository) Create(ctx context.Context, t *models.Tenant) error {
@@ -30,16 +23,14 @@ func (r *tenantRepository) Create(ctx context.Context, t *models.Tenant) error {
 		INSERT INTO tenants (tenant_id, name, industry_segment, settings, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, NOW(), NOW())
 	`
-	_, err := r.Pool.Exec(ctx, query, t.TenantID, t.Name, t.IndustrySegment, t.Settings)
+	_, err := r.DB.Exec(ctx, query, t.TenantID, t.Name, t.IndustrySegment, t.Settings)
 	if err != nil {
 		return fmt.Errorf("failed to insert tenant: %w", err)
 	}
 
 	// 2. SC-HARDENING: Call automation function to create partitions
 	partitionQuery := `SELECT create_tenant_partition($1)`
-	if _, err := r.Pool.Exec(ctx, partitionQuery, t.TenantID); err != nil {
-		// Log error but maybe don't fail the whole creation?
-		// Actually, for SaaS, the partition IS mandatory.
+	if _, err := r.DB.Exec(ctx, partitionQuery, t.TenantID); err != nil {
 		return fmt.Errorf("failed to create tenant partitions: %w", err)
 	}
 
@@ -54,7 +45,7 @@ func (r *tenantRepository) GetByAPIKeyHash(ctx context.Context, hash string) (*m
 	var t models.Tenant
 	query := `SELECT * FROM tenants WHERE api_key_hash = $1 LIMIT 1`
 
-	if err := pgxscan.Get(ctx, r.Pool, &t, query, hash); err != nil {
+	if err := pgxscan.Get(ctx, r.DB, &t, query, hash); err != nil {
 		return nil, fmt.Errorf("failed to get tenant by api key: %w", err)
 	}
 
@@ -71,7 +62,7 @@ func (r *tenantRepository) Update(ctx context.Context, t *models.Tenant) error {
 		SET name = $1, industry_segment = $2, settings = $3, updated_at = NOW()
 		WHERE tenant_id = $4
 	`
-	_, err := r.Pool.Exec(ctx, query, t.Name, t.IndustrySegment, t.Settings, t.TenantID)
+	_, err := r.DB.Exec(ctx, query, t.Name, t.IndustrySegment, t.Settings, t.TenantID)
 	if err != nil {
 		return fmt.Errorf("failed to update tenant: %w", err)
 	}
