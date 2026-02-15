@@ -8,14 +8,17 @@ BUILD_TIME=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 # LDFLAGS for version injection
 LDFLAGS=-ldflags "-X $(PKG)/pkg/version.Version=$(VERSION) -X $(PKG)/pkg/version.Commit=$(COMMIT) -X $(PKG)/pkg/version.BuildTime=$(BUILD_TIME)"
 
-.PHONY: all build run test clean lint migrate-up migrate-down help
+# Docker configuration
+DOCKER_IMAGE=sentinal-core
+
+.PHONY: all build run test clean lint migrate-up migrate-down docker-build docker-run help
 
 all: help
 
 ## build: Build the binary
 build:
 	@echo "Building $(BINARY_NAME)..."
-	@go build $(LDFLAGS) -o bin/$(BINARY_NAME) cmd/api/main.go
+	@CGO_ENABLED=0 go build $(LDFLAGS) -o bin/$(BINARY_NAME) cmd/api/main.go
 
 ## run: Run the application locally
 run: build
@@ -45,6 +48,15 @@ migrate-up:
 migrate-reset:
 	@echo "Resetting database..."
 	@go run cmd/migrate/main.go -reset
+
+## docker-build: Build Docker image
+docker-build:
+	@echo "Building Docker image..."
+	@docker build -t $(DOCKER_IMAGE):latest .
+
+## docker-run: Run Docker container
+docker-run:
+	@docker run -p 8080:8080 --env-file .env $(DOCKER_IMAGE):latest
 
 ## help: Show this help message
 help:

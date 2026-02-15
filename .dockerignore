@@ -1,0 +1,11 @@
+.git
+bin
+vendor
+.env
+.agent
+reports
+documents
+*.md
+Dockerfile
+docker-compose.yaml
+.gitignore
