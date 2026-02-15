@@ -60,3 +60,23 @@
 - **API**: Long-lived API Key (Cached in Redis).
 **Reason**: Separate concerns for Human vs Machine.
 **Status**: ACCEPTED.
+
+---
+
+## 7. Integration Testing: Testcontainers (Go)
+**Decision**: Replaced DB Mocks with real PostgreSQL containers for integration tests.
+**Reason**:
+- **Pro**: High Reliability (Test against real PG engine).
+- **Pro**: Isolated Environment (Clean DB per test suite).
+- **Con**: Slower execution than mocks (Mitigated by reuse strategies).
+**Status**: ACCEPTED.
+
+---
+
+## 8. Data Deletion Strategy: Hybrid (Soft & Hard)
+**Decision**: Use **Soft Delete** for Configuration (Tenants/Policies) & **Hard Delete/Immutable** for High-Volume Data (Transactions/Logs).
+**Reason**:
+- **Pro**: Safety for Admin operations (Recoverable).
+- **Pro**: Compliance/Auditability for Config changes.
+- **Pro**: Performance/Simplicity for immutable event logs (No UPDATE overhead).
+**Status**: ACCEPTED.

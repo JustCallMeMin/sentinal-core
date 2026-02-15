@@ -2,6 +2,14 @@
 
 ## Core Entities
 
+### Tenant (Root Entity)
+- `id`: UUID (Primary Key)
+- `name`: String
+- `industry_segment`: String (e.g. Retail, Finance)
+- `api_key_hash`: String (Hashed)
+- `status`: Enum (Active, Suspended)
+- `deleted_at`: Timestamp (Nullable - Soft Delete support)
+
 ### Transaction
 - `id`: UUID (Primary Key)
 - `tenant_id`: UUID (Isolation Key)

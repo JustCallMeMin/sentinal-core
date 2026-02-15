@@ -19,8 +19,11 @@
 
 ### 2. Data & Feature Layer
 - **Online Feature Store (Feast/Redis)**: Low-latency storage for precomputed feature bundles.
-- **Offline Data Store (PostgreSQL)**: Partitioned by tenant for high-performance retrieval.
-- **Event Bus (Kafka)**: Partitioned per tenant for isolated replay and auditing.
+- **Offline Data Store (PostgreSQL)**: 
+  - **Partitioning**: List Partitioning by `tenant_id` for isolation and performance.
+  - **Repository Pattern**: Generic `BaseRepository[T]` with `UnitOfWork` pattern.
+  - **Hardening**: BRIN indexes for time-series data, Soft Delete support for configuration entities.
+- **Event Bus (Redis Stream/Kafka)**: Event-driven architecture for async processing.
 
 ### 3. ML Lifecycle Layer
 - **Inference Service**: Stateless ONNX runner (POST /predict).

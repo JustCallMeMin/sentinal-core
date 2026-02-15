@@ -44,13 +44,13 @@ Every task is considered DONE only when:
 - [ ] **SC-016**: Add `testcontainer` integration test – `1d` [Dep: SC-015]
 - [ ] **SC-017**: Seed initial tenant + admin user – `0.5d` [Dep: SC-016]
 - [ ] **SC-018**: Add DB index validation test – `0.5d` [Dep: SC-017]
-- [ ] **SC-019**: Add transaction wrapper helper – `0.5d` [Dep: SC-011]
-- [ ] **SC-020**: Add query timeout enforcement – `0.5d` [Dep: SC-012]
+- [x] **SC-019**: Add transaction wrapper helper – `0.5d` [Dep: SC-011]
+- [x] **SC-020**: Add query timeout enforcement – `0.5d` [Dep: SC-012]
 
 **🚦 Gate B**:
-- [ ] Migration reversible
-- [ ] Integration test green
-- [ ] Query timeout enforced
+- [x] Migration reversible
+- [x] Integration test green (Testcontainers)
+- [x] Soft Delete verified
 
 ---
 
