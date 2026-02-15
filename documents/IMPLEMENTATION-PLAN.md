@@ -43,7 +43,7 @@
 - [x] **SC-026**: Implement JWT Auth middleware ✅ 2026-02-15
 - [x] **SC-027**: Implement role permission matrix (Hardened with JTI) ✅ 2026-02-15
 - [x] **SC-028**: Enforce permission (Hardened with Audit Logs) ✅ 2026-02-15
-- [ ] **SC-029**: Implement account lockout logic – `0.5d`
+- [x] **SC-029**: Implement account lockout logic ✅ 2026-02-15
 - [ ] **SC-030**: Implement MFA verification flow – `1d`
 - [ ] **SC-031**: Add API key middleware (tenant) – `0.5d`
 - [ ] **SC-032**: Add API key revocation + last_used_at update – `0.5d`

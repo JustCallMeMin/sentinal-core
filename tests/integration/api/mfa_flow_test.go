@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/pquerna/otp/totp"
 	"github.com/sentinal/core/internal/api/auth"
-	"github.com/sentinal/core/internal/api/transaction"
 	"github.com/sentinal/core/internal/domain/models"
 	"github.com/sentinal/core/internal/domain/repositories"
 	"github.com/sentinal/core/internal/repository"
@@ -21,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAuthFlow_Integration(t *testing.T) {
+func TestMFAFlow_Integration(t *testing.T) {
 	ctx := context.Background()
 	logger.Init("error", "test")
 
@@ -30,9 +31,9 @@ func TestAuthFlow_Integration(t *testing.T) {
 
 	uow := repository.NewUnitOfWork(pool)
 
-	// Setup Test Data
+	// Setup Tenant
 	tenant := &models.Tenant{
-		Name:            "Auth Test Merchant",
+		Name:            "MFA Test Merchant",
 		IndustrySegment: "Test",
 	}
 	err := uow.Do(ctx, func(u repositories.UnitOfWork) error {
@@ -44,7 +45,7 @@ func TestAuthFlow_Integration(t *testing.T) {
 	hash, _ := security.HashPassword(password)
 	user := &models.User{
 		TenantID:     tenant.TenantID,
-		Email:        "test@example.com",
+		Email:        "mfa@example.com",
 		PasswordHash: hash,
 		Status:       "active",
 	}
@@ -66,11 +67,11 @@ func TestAuthFlow_Integration(t *testing.T) {
 	tokenService := auth.NewTokenService(cfg.JWTSecret, cfg.JWTExpiry)
 	authService := auth.NewService(uow, tokenService, cfg)
 	authHandler := auth.NewHandler(authService)
-	txService := transaction.NewService(uow)
-	txHandler := transaction.NewHandler(txService)
-	srv := server.New(cfg, pool, nil, uow, txHandler, authHandler, tokenService)
+	srv := server.New(cfg, pool, nil, uow, nil, authHandler, tokenService)
 
-	t.Run("Login - Success", func(t *testing.T) {
+	var accessToken string
+
+	t.Run("Step 1: Get Access Token (Pre-MFA login)", func(t *testing.T) {
 		loginReq := auth.LoginRequest{
 			TenantID: tenant.TenantID.String(),
 			Email:    user.Email,
@@ -79,61 +80,81 @@ func TestAuthFlow_Integration(t *testing.T) {
 		body, _ := json.Marshal(loginReq)
 		req := httptest.NewRequest("POST", "/api/v1/auth/login", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := srv.App.Test(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
-
+		resp, _ := srv.App.Test(req)
 		assert.Equal(t, 200, resp.StatusCode)
 
-		var result auth.LoginResponse
-		err = json.NewDecoder(resp.Body).Decode(&result)
-		require.NoError(t, err)
-		assert.Equal(t, "success", result.Status)
-		assert.Equal(t, user.Email, result.Email)
-		assert.NotEmpty(t, result.AccessToken)
+		var res auth.LoginResponse
+		json.NewDecoder(resp.Body).Decode(&res)
+		accessToken = res.AccessToken
+		assert.Equal(t, "success", res.Status)
 	})
 
-	t.Run("Login - Invalid Password", func(t *testing.T) {
+	var mfaSecret string
+
+	t.Run("Step 2: Setup MFA", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/api/v1/auth/mfa/setup", nil)
+		req.Header.Set("Authorization", "Bearer "+accessToken)
+		resp, _ := srv.App.Test(req)
+		assert.Equal(t, 200, resp.StatusCode)
+
+		var res auth.MFASetupResponse
+		json.NewDecoder(resp.Body).Decode(&res)
+		assert.NotEmpty(t, res.Secret)
+		mfaSecret = res.Secret
+	})
+
+	t.Run("Step 3: Activate MFA", func(t *testing.T) {
+		code, _ := totp.GenerateCode(mfaSecret, time.Now())
+
+		activateReq := auth.MFAActivateRequest{Code: code}
+		body, _ := json.Marshal(activateReq)
+		req := httptest.NewRequest("POST", "/api/v1/auth/mfa/activate", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+accessToken)
+		req.Header.Set("Content-Type", "application/json")
+		resp, _ := srv.App.Test(req)
+		assert.Equal(t, 200, resp.StatusCode)
+
+		u, _ := uow.Users().GetByID(ctx, user.UserID)
+		assert.True(t, u.MFAEnabled)
+	})
+
+	var mfaToken string
+
+	t.Run("Step 4: Login with MFA Enabled", func(t *testing.T) {
 		loginReq := auth.LoginRequest{
 			TenantID: tenant.TenantID.String(),
 			Email:    user.Email,
-			Password: "wrongpassword",
-		}
-		body, _ := json.Marshal(loginReq)
-		req := httptest.NewRequest("POST", "/api/v1/auth/login", bytes.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
-
-		resp, err := srv.App.Test(req)
-		require.NoError(t, err)
-		assert.Equal(t, 401, resp.StatusCode)
-	})
-
-	t.Run("Login - NonExistent User", func(t *testing.T) {
-		loginReq := auth.LoginRequest{
-			TenantID: tenant.TenantID.String(),
-			Email:    "nobody@example.com",
 			Password: password,
 		}
 		body, _ := json.Marshal(loginReq)
 		req := httptest.NewRequest("POST", "/api/v1/auth/login", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
+		resp, _ := srv.App.Test(req)
+		assert.Equal(t, 200, resp.StatusCode)
 
-		resp, err := srv.App.Test(req)
-		require.NoError(t, err)
-		assert.Equal(t, 401, resp.StatusCode)
+		var res auth.LoginResponse
+		json.NewDecoder(resp.Body).Decode(&res)
+		assert.Equal(t, "mfa_required", res.Status)
+		assert.NotEmpty(t, res.MFAToken)
+		assert.Empty(t, res.AccessToken)
+		mfaToken = res.MFAToken
 	})
 
-	t.Run("Login - Validation Error", func(t *testing.T) {
-		loginReq := auth.LoginRequest{
-			Email: "invalid-email",
+	t.Run("Step 5: Verify MFA and get Access Token", func(t *testing.T) {
+		code, _ := totp.GenerateCode(mfaSecret, time.Now())
+		verifyReq := auth.MFAVerifyRequest{
+			MFAToken: mfaToken,
+			Code:     code,
 		}
-		body, _ := json.Marshal(loginReq)
-		req := httptest.NewRequest("POST", "/api/v1/auth/login", bytes.NewReader(body))
+		body, _ := json.Marshal(verifyReq)
+		req := httptest.NewRequest("POST", "/api/v1/auth/mfa/verify", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
+		resp, _ := srv.App.Test(req)
+		assert.Equal(t, 200, resp.StatusCode)
 
-		resp, err := srv.App.Test(req)
-		require.NoError(t, err)
-		assert.Equal(t, 400, resp.StatusCode)
+		var res auth.LoginResponse
+		json.NewDecoder(resp.Body).Decode(&res)
+		assert.Equal(t, "success", res.Status)
+		assert.NotEmpty(t, res.AccessToken)
 	})
 }

@@ -10,6 +10,7 @@ import (
 
 type TokenService interface {
 	GenerateToken(userID uuid.UUID, tenantID uuid.UUID, email string, permissions []string) (string, error)
+	GenerateMFAToken(userID uuid.UUID, tenantID uuid.UUID) (string, error)
 	ValidateToken(tokenString string) (*UserClaims, error)
 }
 
@@ -23,6 +24,7 @@ type UserClaims struct {
 	TenantID    uuid.UUID `json:"tenant_id"`
 	Email       string    `json:"email"`
 	Permissions []string  `json:"permissions"`
+	IsMFA       bool      `json:"is_mfa,omitempty"`
 }
 
 func NewTokenService(secret string, expiryHours int) TokenService {
@@ -71,4 +73,20 @@ func (s *jwtTokenService) GenerateToken(userID uuid.UUID, tenantID uuid.UUID, em
 	}
 
 	return signedToken, nil
+}
+
+func (s *jwtTokenService) GenerateMFAToken(userID uuid.UUID, tenantID uuid.UUID) (string, error) {
+	claims := UserClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   userID.String(),
+			ID:        uuid.NewString(),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)), // Short lived
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+		TenantID: tenantID,
+		IsMFA:    true,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(s.secret)
 }

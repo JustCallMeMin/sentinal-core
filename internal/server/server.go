@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"github.com/sentinal/core/internal/api/auth"
 	"github.com/sentinal/core/internal/api/transaction"
 	"github.com/sentinal/core/internal/domain/repositories"
@@ -16,6 +17,7 @@ type Server struct {
 	App                *fiber.App
 	Config             *config.Config
 	DB                 *pgxpool.Pool
+	Redis              *redis.Client
 	UoW                repositories.UnitOfWork
 	TransactionHandler *transaction.Handler
 	AuthHandler        *auth.Handler
@@ -23,7 +25,7 @@ type Server struct {
 }
 
 // New creates a new Server instance
-func New(cfg *config.Config, db *pgxpool.Pool, uow repositories.UnitOfWork, txHandler *transaction.Handler, authHandler *auth.Handler, tokenService auth.TokenService) *Server {
+func New(cfg *config.Config, db *pgxpool.Pool, redis *redis.Client, uow repositories.UnitOfWork, txHandler *transaction.Handler, authHandler *auth.Handler, tokenService auth.TokenService) *Server {
 	app := fiber.New(fiber.Config{
 		AppName:       "Sentinal Core " + version.Version,
 		StrictRouting: true,
@@ -39,6 +41,7 @@ func New(cfg *config.Config, db *pgxpool.Pool, uow repositories.UnitOfWork, txHa
 		App:                app,
 		Config:             cfg,
 		DB:                 db,
+		Redis:              redis,
 		UoW:                uow,
 		TransactionHandler: txHandler,
 		AuthHandler:        authHandler,

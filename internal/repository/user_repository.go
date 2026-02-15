@@ -75,3 +75,48 @@ func (r *userRepository) UpdateStatus(ctx context.Context, userID uuid.UUID, sta
 	}
 	return nil
 }
+
+func (r *userRepository) IncrementFailedAttempts(ctx context.Context, userID uuid.UUID, maxFailedAttempts int, lockoutDurationMinutes int) error {
+	query := `
+		UPDATE users 
+		SET failed_attempts = failed_attempts + 1,
+		    locked_until = CASE 
+		        WHEN failed_attempts + 1 >= $1 THEN NOW() + ($2 * INTERVAL '1 minute')
+		        ELSE locked_until 
+		    END,
+		    updated_at = NOW()
+		WHERE user_id = $3
+	`
+	_, err := r.DB.Exec(ctx, query, maxFailedAttempts, lockoutDurationMinutes, userID)
+	if err != nil {
+		return fmt.Errorf("failed to increment failed attempts: %w", err)
+	}
+	return nil
+}
+
+func (r *userRepository) ResetFailedAttempts(ctx context.Context, userID uuid.UUID) error {
+	query := `UPDATE users SET failed_attempts = 0, locked_until = NULL, updated_at = NOW() WHERE user_id = $1`
+	_, err := r.DB.Exec(ctx, query, userID)
+	if err != nil {
+		return fmt.Errorf("failed to reset failed attempts: %w", err)
+	}
+	return nil
+}
+
+func (r *userRepository) UpdateMFASecret(ctx context.Context, userID uuid.UUID, secret string) error {
+	query := `UPDATE users SET mfa_secret = $1, updated_at = NOW() WHERE user_id = $2`
+	_, err := r.DB.Exec(ctx, query, secret, userID)
+	if err != nil {
+		return fmt.Errorf("failed to update mfa secret: %w", err)
+	}
+	return nil
+}
+
+func (r *userRepository) SetMFAEnabled(ctx context.Context, userID uuid.UUID, enabled bool) error {
+	query := `UPDATE users SET mfa_enabled = $1, updated_at = NOW() WHERE user_id = $2`
+	_, err := r.DB.Exec(ctx, query, enabled, userID)
+	if err != nil {
+		return fmt.Errorf("failed to set mfa enabled: %w", err)
+	}
+	return nil
+}

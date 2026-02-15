@@ -7,16 +7,20 @@ import (
 
 // Config holds all configuration for the application
 type Config struct {
-	AppEnv      string `mapstructure:"APP_ENV"`
-	Port        string `mapstructure:"SERVER_PORT"`
-	DatabaseURL string `mapstructure:"DATABASE_URL"`
-	RedisAddr   string `mapstructure:"REDIS_ADDR"`
-	LogLevel    string `mapstructure:"LOG_LEVEL"`
-	JWTSecret   string `mapstructure:"JWT_SECRET"`
-	JWTExpiry   int    `mapstructure:"JWT_EXPIRY_HOURS"` // Expiry in hours
-	DBMaxConns  int32  `mapstructure:"DB_MAX_CONNS"`
-	DBMinConns  int32  `mapstructure:"DB_MIN_CONNS"`
-	DBMaxIdle   string `mapstructure:"DB_MAX_IDLE_TIME"`
+	AppEnv                 string `mapstructure:"APP_ENV"`
+	Port                   string `mapstructure:"SERVER_PORT"`
+	DatabaseURL            string `mapstructure:"DATABASE_URL"`
+	RedisAddr              string `mapstructure:"REDIS_ADDR"`
+	LogLevel               string `mapstructure:"LOG_LEVEL"`
+	JWTSecret              string `mapstructure:"JWT_SECRET"`
+	JWTExpiry              int    `mapstructure:"JWT_EXPIRY_HOURS"` // Expiry in hours
+	DBMaxConns             int32  `mapstructure:"DB_MAX_CONNS"`
+	DBMinConns             int32  `mapstructure:"DB_MIN_CONNS"`
+	DBMaxIdle              string `mapstructure:"DB_MAX_IDLE_TIME"`
+	AuthMaxFailedAttempts  int    `mapstructure:"AUTH_MAX_FAILED_ATTEMPTS"`
+	AuthLockoutMinutes     int    `mapstructure:"AUTH_LOCKOUT_MINUTES"`
+	RateLimitMax           int    `mapstructure:"RATE_LIMIT_MAX"`
+	RateLimitWindowMinutes int    `mapstructure:"RATE_LIMIT_WINDOW_MINUTES"`
 }
 
 // Validate ensures all required configuration is present and valid
@@ -40,6 +44,10 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("DB_MAX_CONNS", 20)
 	viper.SetDefault("DB_MIN_CONNS", 5)
 	viper.SetDefault("DB_MAX_IDLE_TIME", "15m")
+	viper.SetDefault("AUTH_MAX_FAILED_ATTEMPTS", 5)
+	viper.SetDefault("AUTH_LOCKOUT_MINUTES", 15)
+	viper.SetDefault("RATE_LIMIT_MAX", 100)
+	viper.SetDefault("RATE_LIMIT_WINDOW_MINUTES", 1)
 
 	// Read from .env file if it exists
 	viper.SetConfigFile(".env")

@@ -20,7 +20,35 @@ func (r LoginRequest) Validate() error {
 }
 
 type LoginResponse struct {
-	AccessToken string `json:"access_token"` // Future milestone (SC-023)
+	AccessToken string `json:"access_token,omitempty"`
+	MFAToken    string `json:"mfa_token,omitempty"`
 	Email       string `json:"email"`
-	Status      string `json:"status"`
+	Status      string `json:"status"` // "success", "mfa_required"
+}
+
+type MFASetupResponse struct {
+	Secret string `json:"secret"`
+	QRCode string `json:"qr_code"` // Provisioning URI
+}
+
+type MFAActivateRequest struct {
+	Code string `json:"code"`
+}
+
+func (r MFAActivateRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.Code, validation.Required, validation.Length(6, 6)),
+	)
+}
+
+type MFAVerifyRequest struct {
+	MFAToken string `json:"mfa_token"`
+	Code     string `json:"code"`
+}
+
+func (r MFAVerifyRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.MFAToken, validation.Required),
+		validation.Field(&r.Code, validation.Required, validation.Length(6, 6)),
+	)
 }

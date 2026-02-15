@@ -78,15 +78,19 @@ func TestRBACFlow_Integration(t *testing.T) {
 
 	// Initialize Server
 	cfg := &config.Config{
-		AppEnv:    "test",
-		JWTSecret: "test-secret",
-		JWTExpiry: 1,
+		AppEnv:                 "test",
+		JWTSecret:              "test-secret",
+		JWTExpiry:              1,
+		AuthMaxFailedAttempts:  5,
+		AuthLockoutMinutes:     15,
+		RateLimitMax:           1000,
+		RateLimitWindowMinutes: 1,
 	}
 	tokenService := auth.NewTokenService(cfg.JWTSecret, cfg.JWTExpiry)
-	authService := auth.NewService(uow, tokenService)
+	authService := auth.NewService(uow, tokenService, cfg)
 	authHandler := auth.NewHandler(authService)
 
-	srv := server.New(cfg, pool, uow, nil, authHandler, tokenService)
+	srv := server.New(cfg, pool, nil, uow, nil, authHandler, tokenService)
 
 	// Register a test route protected by RBAC
 	srv.App.Get("/test/admin-only",

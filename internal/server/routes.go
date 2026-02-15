@@ -56,7 +56,13 @@ func (s *Server) RegisterRoutes() {
 	// Auth Routes
 	if s.AuthHandler != nil {
 		auth := v1.Group("/auth")
-		auth.Post("/login", s.AuthHandler.Login)
+		auth.Post("/login", RateLimitMiddleware(s.Config, s.Redis), s.AuthHandler.Login)
+		auth.Post("/mfa/verify", RateLimitMiddleware(s.Config, s.Redis), s.AuthHandler.MFAVerify)
+
+		// MFA Setup requires current session
+		mfa := auth.Group("/mfa", AuthMiddleware(s.TokenService))
+		mfa.Post("/setup", s.AuthHandler.MFASetup)
+		mfa.Post("/activate", s.AuthHandler.MFAActivate)
 	}
 
 	// Admin Routes

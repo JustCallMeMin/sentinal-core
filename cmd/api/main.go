@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/sentinal/core/internal/api/auth"
 	"github.com/sentinal/core/internal/api/transaction"
 	"github.com/sentinal/core/internal/database"
@@ -41,7 +43,23 @@ func main() {
 	}
 	defer database.Close()
 
-	// 5. Initialize Unit of Work
+	// 5. Initialize Redis
+	var redisClient *redis.Client
+	if cfg.RedisAddr != "" {
+		redisClient = redis.NewClient(&redis.Options{
+			Addr: cfg.RedisAddr,
+		})
+		// Check connection (optional, we could also do this lazily)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := redisClient.Ping(ctx).Err(); err != nil {
+			logger.Warn("Redis connection failed, rate limiting will be in-memory", zap.Error(err))
+		} else {
+			logger.Info("Connected to Redis", zap.String("addr", cfg.RedisAddr))
+		}
+	}
+
+	// 6. Initialize Unit of Work
 	uow := repository.NewUnitOfWork(dbPool)
 
 	// 6. Initialize Services & Handlers
@@ -49,13 +67,13 @@ func main() {
 	txHandler := transaction.NewHandler(txService)
 
 	tokenService := auth.NewTokenService(cfg.JWTSecret, cfg.JWTExpiry)
-	authService := auth.NewService(uow, tokenService)
+	authService := auth.NewService(uow, tokenService, cfg)
 	authHandler := auth.NewHandler(authService)
 
-	// 7. Create server
-	srv := server.New(cfg, dbPool, uow, txHandler, authHandler, tokenService)
+	// 8. Create server
+	srv := server.New(cfg, dbPool, redisClient, uow, txHandler, authHandler, tokenService)
 
-	// 6. Graceful shutdown coordination
+	// 9. Graceful shutdown coordination
 	shutdownComplete := make(chan struct{})
 	go func() {
 		sigint := make(chan os.Signal, 1)
@@ -69,6 +87,10 @@ func main() {
 		// Set a timeout for shutdown process to prevent hanging
 		if err := srv.App.ShutdownWithTimeout(10 * time.Second); err != nil {
 			logger.Error("Server shutdown failed or timed out", zap.Error(err))
+		}
+
+		if redisClient != nil {
+			_ = redisClient.Close()
 		}
 
 		close(shutdownComplete)

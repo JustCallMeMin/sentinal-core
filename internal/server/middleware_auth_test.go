@@ -20,6 +20,11 @@ func (m *MockTokenService) GenerateToken(userID, tenantID uuid.UUID, email strin
 	return args.String(0), args.Error(1)
 }
 
+func (m *MockTokenService) GenerateMFAToken(userID, tenantID uuid.UUID) (string, error) {
+	args := m.Called(userID, tenantID)
+	return args.String(0), args.Error(1)
+}
+
 func (m *MockTokenService) ValidateToken(tokenString string) (*auth.UserClaims, error) {
 	args := m.Called(tokenString)
 	if args.Get(0) == nil {
