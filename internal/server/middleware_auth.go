@@ -38,6 +38,7 @@ func AuthMiddleware(tokenService auth.TokenService) fiber.Handler {
 		c.Locals("tenant_id", claims.TenantID)
 		c.Locals("email", claims.Email)
 		c.Locals("permissions", claims.Permissions)
+		c.Locals("jti", claims.ID)
 
 		return c.Next()
 	}

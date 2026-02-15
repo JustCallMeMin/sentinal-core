@@ -39,6 +39,7 @@ func TestTokenService(t *testing.T) {
 		assert.Equal(t, tenantID, claims.TenantID)
 		assert.Equal(t, email, claims.Email)
 		assert.Equal(t, permissions, claims.Permissions)
+		assert.NotEmpty(t, claims.ID) // Verify JTI (jwt.RegisteredClaims.ID)
 
 		// Verify expiry (within reasonable range)
 		expiry := claims.ExpiresAt.Time

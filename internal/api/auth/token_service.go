@@ -55,6 +55,7 @@ func (s *jwtTokenService) GenerateToken(userID uuid.UUID, tenantID uuid.UUID, em
 	claims := UserClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   userID.String(),
+			ID:        uuid.NewString(), // JTI for revocation support
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.expiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
