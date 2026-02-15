@@ -1,58 +1,89 @@
 package main
 
 import (
-	"database/sql"
+	"flag"
+	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Load .env file if it exists
+	// Load .env if exists (for local runs)
 	_ = godotenv.Load()
 
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		log.Fatal("DATABASE_URL is not set")
+	var migrationDir string
+	var databaseURL string
+	var reset bool
+	var up bool
+	var down bool
+
+	flag.StringVar(&migrationDir, "dir", "migrations", "Directory containing migration files")
+	flag.StringVar(&databaseURL, "url", os.Getenv("DATABASE_URL"), "Database URL")
+	flag.BoolVar(&reset, "reset", false, "Reset database (down + up)")
+	flag.BoolVar(&up, "up", false, "Run up migrations")
+	flag.BoolVar(&down, "down", false, "Run down migrations")
+	flag.Parse()
+
+	if databaseURL == "" {
+		log.Fatal("DATABASE_URL must be set via flag or environment variable")
 	}
 
-	// Check for reset flag
-	if len(os.Args) > 1 && os.Args[1] == "-reset" {
-		log.Println("Reseting database (DROP SCHEMA public CASCADE)...")
-
-		// Open direct connection
-		db, err := sql.Open("postgres", dbURL)
-		if err != nil {
-			log.Fatalf("SQL Open failed: %v", err)
-		}
-		defer db.Close()
-
-		// Nuke it from orbit
-		if _, err := db.Exec("DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO postgres; GRANT ALL ON SCHEMA public TO public;"); err != nil {
-			log.Fatalf("Drop Schema failed: %v", err)
-		}
-		log.Println("Database reset successful.")
+	// golang-migrate with pgx/v5 requires pgx5:// prefix
+	if strings.HasPrefix(databaseURL, "postgres://") {
+		databaseURL = strings.Replace(databaseURL, "postgres://", "pgx5://", 1)
 	}
 
-	// Migration source path
 	m, err := migrate.New(
-		"file://migrations",
-		dbURL)
+		fmt.Sprintf("file://%s", migrationDir),
+		databaseURL,
+	)
 	if err != nil {
-		// Try to force clean if dirty state prevents new instance
-		log.Printf("Migration init failed (retrying): %v", err)
+		log.Fatalf("Could not create migrate instance: %v", err)
 	}
 
-	if err := m.Up(); err != nil {
-		if err == migrate.ErrNoChange {
-			log.Println("Database already up to date")
-		} else {
-			log.Fatalf("Migration failed: %v", err)
+	defer m.Close()
+
+	if reset {
+		log.Println("Resetting database...")
+		if err := m.Down(); err != nil && err != migrate.ErrNoChange {
+			log.Fatalf("Down migration failed during reset: %v", err)
 		}
-	} else {
-		log.Println("Migration successful!")
+		if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+			log.Fatalf("Up migration failed during reset: %v", err)
+		}
+		log.Println("Database reset successful")
+		return
+	}
+
+	if down {
+		log.Println("Running down migrations...")
+		if err := m.Down(); err != nil {
+			if err == migrate.ErrNoChange {
+				log.Println("No migrations to rollback")
+			} else {
+				log.Fatalf("Down migration failed: %v", err)
+			}
+		} else {
+			log.Println("Down migration successful")
+		}
+	}
+
+	if up || (!up && !down && !reset) {
+		log.Println("Running up migrations...")
+		if err := m.Up(); err != nil {
+			if err == migrate.ErrNoChange {
+				log.Println("Database schema is up to date")
+			} else {
+				log.Fatalf("Up migration failed: %v", err)
+			}
+		} else {
+			log.Println("Up migration successful")
+		}
 	}
 }

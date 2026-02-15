@@ -42,9 +42,14 @@ clean:
 ## migrate-up: Run database up migrations
 migrate-up:
 	@echo "Running migrations up..."
-	@go run cmd/migrate/main.go
+	@go run cmd/migrate/main.go -up
 
-## migrate-reset: Reset database and run migrations
+## migrate-down: Rollback last database migration
+migrate-down:
+	@echo "Rolling back migrations..."
+	@go run cmd/migrate/main.go -down
+
+## migrate-reset: Reset database and run all migrations
 migrate-reset:
 	@echo "Resetting database..."
 	@go run cmd/migrate/main.go -reset
