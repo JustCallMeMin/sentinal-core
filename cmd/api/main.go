@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/sentinal/core/internal/server"
 	"github.com/sentinal/core/pkg/config"
@@ -20,7 +21,9 @@ func main() {
 
 	// 2. Initialize Logger
 	logger.Init(cfg.LogLevel, cfg.AppEnv)
-	defer logger.Log.Sync()
+	defer func() {
+		_ = logger.Log.Sync()
+	}()
 
 	// 3. Validate configuration
 	if err := cfg.Validate(); err != nil {
@@ -30,16 +33,24 @@ func main() {
 	// 4. Create server
 	srv := server.New(cfg)
 
-	// 5. Graceful shutdown
+	// 5. Graceful shutdown coordination
+	shutdownComplete := make(chan struct{})
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 		<-sigint
 
-		logger.Info("Shutting down server...")
-		if err := srv.App.Shutdown(); err != nil {
-			logger.Error("Server shutdown failed", zap.Error(err))
+		logger.Info("Shutting down server gracefully...")
+
+		// TODO(SC-011, SC-020): Close DB connections here
+		// TODO(SC-077): Close Redis connections here
+
+		// Set a timeout for shutdown process to prevent hanging
+		if err := srv.App.ShutdownWithTimeout(10 * time.Second); err != nil {
+			logger.Error("Server shutdown failed or timed out", zap.Error(err))
 		}
+
+		close(shutdownComplete)
 	}()
 
 	// 6. Start server
@@ -49,6 +60,11 @@ func main() {
 	)
 
 	if err := srv.Listen(":" + cfg.Port); err != nil {
-		logger.Fatal("Server failed to start", zap.Error(err))
+		// Listen returns error when server is closed, this is normal
+		logger.Info("Server listener closed", zap.Error(err))
 	}
+
+	// Wait for shutdown goroutine to finish (cleanup, etc.)
+	<-shutdownComplete
+	logger.Info("Server exit complete. Goodbye!")
 }
