@@ -2,7 +2,6 @@ package server
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/sentinal/core/pkg/config"
 	"github.com/sentinal/core/pkg/version"
@@ -24,7 +23,7 @@ func New(cfg *config.Config) *Server {
 
 	// Middleware
 	app.Use(recover.New())
-	app.Use(logger.New())
+	app.Use(TraceMiddleware()) // Our custom structured logger + trace ID
 
 	// Base Routes
 	app.Get("/", func(c *fiber.Ctx) error {

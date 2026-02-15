@@ -1,45 +1,54 @@
 package main
 
 import (
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/sentinal/core/internal/server"
 	"github.com/sentinal/core/pkg/config"
+	"github.com/sentinal/core/pkg/logger"
+	"go.uber.org/zap"
 )
 
 func main() {
-	// Load configuration
+	// 1. Load configuration
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		panic("Failed to load configuration: " + err.Error())
 	}
 
-	// Validate configuration
+	// 2. Initialize Logger
+	logger.Init(cfg.LogLevel, cfg.AppEnv)
+	defer logger.Log.Sync()
+
+	// 3. Validate configuration
 	if err := cfg.Validate(); err != nil {
-		log.Fatalf("Invalid configuration: %v", err)
+		logger.Fatal("Invalid configuration", zap.Error(err))
 	}
 
-	// Create server
+	// 4. Create server
 	srv := server.New(cfg)
 
-	// Graceful shutdown
+	// 5. Graceful shutdown
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 		<-sigint
 
-		log.Println("Shutting down server...")
+		logger.Info("Shutting down server...")
 		if err := srv.App.Shutdown(); err != nil {
-			log.Fatalf("Server shutdown failed: %v", err)
+			logger.Error("Server shutdown failed", zap.Error(err))
 		}
 	}()
 
-	// Start server
-	log.Printf("Starting Sentinal Core API on :%s (Env: %s)", cfg.Port, cfg.AppEnv)
+	// 6. Start server
+	logger.Info("Starting Sentinal Core API",
+		zap.String("port", cfg.Port),
+		zap.String("env", cfg.AppEnv),
+	)
+
 	if err := srv.Listen(":" + cfg.Port); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+		logger.Fatal("Server failed to start", zap.Error(err))
 	}
 }
