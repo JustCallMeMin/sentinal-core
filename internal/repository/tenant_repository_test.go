@@ -52,4 +52,25 @@ func TestTenantRepository_Integration(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotEmpty(t, tenants)
 	})
+
+	t.Run("Soft Delete Tenant", func(t *testing.T) {
+		tenant := &models.Tenant{
+			Name:            "To Be Deleted",
+			IndustrySegment: "Disposable",
+		}
+		err := repo.Create(ctx, tenant)
+		require.NoError(t, err)
+
+		// Delete
+		err = repo.Delete(ctx, tenant.TenantID)
+		require.NoError(t, err)
+
+		// Verify GetByID fails
+		found, err := repo.GetByID(ctx, tenant.TenantID)
+		assert.Error(t, err)
+		assert.Nil(t, found)
+
+		// Verify strict checking (optional, depends on error message)
+		// but standard pgxscan returns "scanning one: no rows in result set"
+	})
 }

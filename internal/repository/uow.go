@@ -64,12 +64,12 @@ func (u *unitOfWork) Do(ctx context.Context, fn func(repositories.UnitOfWork) er
 
 func (u *unitOfWork) Tenants() repositories.TenantRepository {
 	return &tenantRepository{
-		BaseRepository: NewBaseRepository[models.Tenant](u.db, "tenants"),
+		BaseRepository: NewBaseRepository[models.Tenant](u.db, "tenants", "deleted_at"),
 	}
 }
 
 func (u *unitOfWork) Transactions() repositories.TransactionRepository {
 	return &transactionRepository{
-		BaseRepository: NewBaseRepository[models.Transaction](u.db, "transactions"),
+		BaseRepository: NewBaseRepository[models.Transaction](u.db, "transactions", ""),
 	}
 }

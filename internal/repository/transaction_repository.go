@@ -15,7 +15,7 @@ type transactionRepository struct {
 
 func NewTransactionRepository(db Querier) *transactionRepository {
 	return &transactionRepository{
-		BaseRepository: NewBaseRepository[models.Transaction](db, "transactions"),
+		BaseRepository: NewBaseRepository[models.Transaction](db, "transactions", ""),
 	}
 }
 

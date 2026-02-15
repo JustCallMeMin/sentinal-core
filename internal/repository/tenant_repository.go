@@ -15,7 +15,7 @@ type tenantRepository struct {
 
 func NewTenantRepository(db Querier) *tenantRepository {
 	return &tenantRepository{
-		BaseRepository: NewBaseRepository[models.Tenant](db, "tenants"),
+		BaseRepository: NewBaseRepository[models.Tenant](db, "tenants", "deleted_at"),
 	}
 }
 
@@ -73,4 +73,8 @@ func (r *tenantRepository) Update(ctx context.Context, t *models.Tenant) error {
 		return fmt.Errorf("failed to update tenant: %w", err)
 	}
 	return nil
+}
+
+func (r *tenantRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	return r.BaseRepository.Delete(ctx, id, "tenant_id")
 }
