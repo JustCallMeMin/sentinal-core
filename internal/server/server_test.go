@@ -50,6 +50,24 @@ func TestHealthCheck(t *testing.T) {
 	assert.NotNil(t, data["timestamp"])
 }
 
+func TestReadinessCheck(t *testing.T) {
+	cfg := &config.Config{AppEnv: "test"}
+	srv := New(cfg)
+
+	req := httptest.NewRequest("GET", "/readyz", nil)
+	resp, err := srv.App.Test(req)
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, _ := io.ReadAll(resp.Body)
+	var data map[string]interface{}
+	err = json.Unmarshal(body, &data)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "ready", data["status"])
+}
+
 func TestRootRoute(t *testing.T) {
 	cfg := &config.Config{AppEnv: "test"}
 	srv := New(cfg)

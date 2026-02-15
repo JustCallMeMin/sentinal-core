@@ -13,6 +13,7 @@ import (
 type Server struct {
 	App    *fiber.App
 	Config *config.Config
+	// TODO(SC-011): Add DB *pgxpool.Pool here
 }
 
 // New creates a new Server instance
@@ -27,6 +28,8 @@ func New(cfg *config.Config) *Server {
 	app.Use(recover.New())
 	app.Use(TraceMiddleware()) // Our custom structured logger + trace ID
 
+	// TODO(SC-031): Move routes to internal/server/routes.go when scaling
+
 	// Base Routes
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -36,10 +39,23 @@ func New(cfg *config.Config) *Server {
 		})
 	})
 
-	// Health Check
+	// Health Check (Liveness)
 	app.Get("/healthz", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"status":    "ok",
+			"service":   "sentinal-core",
+			"version":   version.Version,
+			"timestamp": time.Now().Unix(),
+		})
+	})
+
+	// Readiness Check
+	app.Get("/readyz", func(c *fiber.Ctx) error {
+		// TODO(SC-011): Perform actual DB ping here
+		// if err := s.DB.Ping(); err != nil { return c.Status(503).JSON(...) }
+
+		return c.JSON(fiber.Map{
+			"status":    "ready",
 			"service":   "sentinal-core",
 			"version":   version.Version,
 			"timestamp": time.Now().Unix(),
