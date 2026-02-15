@@ -53,7 +53,7 @@ func main() {
 	authHandler := auth.NewHandler(authService)
 
 	// 7. Create server
-	srv := server.New(cfg, dbPool, uow, txHandler, authHandler)
+	srv := server.New(cfg, dbPool, uow, txHandler, authHandler, tokenService)
 
 	// 6. Graceful shutdown coordination
 	shutdownComplete := make(chan struct{})

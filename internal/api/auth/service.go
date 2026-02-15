@@ -14,14 +14,14 @@ type Service interface {
 }
 
 type service struct {
-	uow            repositories.UnitOfWork
-	tokenGenerator TokenGenerator
+	uow          repositories.UnitOfWork
+	tokenService TokenService
 }
 
-func NewService(uow repositories.UnitOfWork, tokenGenerator TokenGenerator) Service {
+func NewService(uow repositories.UnitOfWork, tokenService TokenService) Service {
 	return &service{
-		uow:            uow,
-		tokenGenerator: tokenGenerator,
+		uow:          uow,
+		tokenService: tokenService,
 	}
 }
 
@@ -44,7 +44,7 @@ func (s *service) Login(ctx context.Context, req *LoginRequest) (*LoginResponse,
 		return nil, fmt.Errorf("account is %s", user.Status)
 	}
 
-	accessToken, err := s.tokenGenerator.GenerateToken(user.UserID, user.TenantID, user.Email)
+	accessToken, err := s.tokenService.GenerateToken(user.UserID, user.TenantID, user.Email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access token")
 	}

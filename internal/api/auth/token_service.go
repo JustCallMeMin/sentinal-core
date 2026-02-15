@@ -8,8 +8,9 @@ import (
 	"github.com/google/uuid"
 )
 
-type TokenGenerator interface {
+type TokenService interface {
 	GenerateToken(userID uuid.UUID, tenantID uuid.UUID, email string) (string, error)
+	ValidateToken(tokenString string) (*UserClaims, error)
 }
 
 type jwtTokenService struct {
@@ -23,11 +24,30 @@ type UserClaims struct {
 	Email    string    `json:"email"`
 }
 
-func NewTokenService(secret string, expiryHours int) TokenGenerator {
+func NewTokenService(secret string, expiryHours int) TokenService {
 	return &jwtTokenService{
 		secret: []byte(secret),
 		expiry: time.Duration(expiryHours) * time.Hour,
 	}
+}
+
+func (s *jwtTokenService) ValidateToken(tokenString string) (*UserClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &UserClaims{}, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+		return s.secret, nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("invalid token: %w", err)
+	}
+
+	if claims, ok := token.Claims.(*UserClaims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, fmt.Errorf("invalid token claims")
 }
 
 func (s *jwtTokenService) GenerateToken(userID uuid.UUID, tenantID uuid.UUID, email string) (string, error) {

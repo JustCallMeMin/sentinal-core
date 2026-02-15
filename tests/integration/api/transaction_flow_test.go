@@ -45,7 +45,7 @@ func TestTransactionIngestion_Integration(t *testing.T) {
 	cfg := &config.Config{AppEnv: "test"}
 	txService := transaction.NewService(uow)
 	txHandler := transaction.NewHandler(txService)
-	srv := server.New(cfg, pool, uow, txHandler, nil)
+	srv := server.New(cfg, pool, uow, txHandler, nil, nil)
 
 	t.Run("Create Transaction - Success", func(t *testing.T) {
 		payload := map[string]interface{}{

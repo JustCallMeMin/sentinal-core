@@ -64,7 +64,7 @@ func TestAuthFlow_Integration(t *testing.T) {
 	authHandler := auth.NewHandler(authService)
 	txService := transaction.NewService(uow)
 	txHandler := transaction.NewHandler(txService)
-	srv := server.New(cfg, pool, uow, txHandler, authHandler)
+	srv := server.New(cfg, pool, uow, txHandler, authHandler, tokenService)
 
 	t.Run("Login - Success", func(t *testing.T) {
 		loginReq := auth.LoginRequest{

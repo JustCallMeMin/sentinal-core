@@ -19,10 +19,11 @@ type Server struct {
 	UoW                repositories.UnitOfWork
 	TransactionHandler *transaction.Handler
 	AuthHandler        *auth.Handler
+	TokenService       auth.TokenService
 }
 
 // New creates a new Server instance
-func New(cfg *config.Config, db *pgxpool.Pool, uow repositories.UnitOfWork, txHandler *transaction.Handler, authHandler *auth.Handler) *Server {
+func New(cfg *config.Config, db *pgxpool.Pool, uow repositories.UnitOfWork, txHandler *transaction.Handler, authHandler *auth.Handler, tokenService auth.TokenService) *Server {
 	app := fiber.New(fiber.Config{
 		AppName:       "Sentinal Core " + version.Version,
 		StrictRouting: true,
@@ -41,6 +42,7 @@ func New(cfg *config.Config, db *pgxpool.Pool, uow repositories.UnitOfWork, txHa
 		UoW:                uow,
 		TransactionHandler: txHandler,
 		AuthHandler:        authHandler,
+		TokenService:       tokenService,
 	}
 
 	// Register Routes
